@@ -1,32 +1,100 @@
 import os
 import sqlite3
+from flask import Flask, render_template, url_for, make_response
 
-try:
-    f = open(os.path.join('static\images', '2.jpg'), 'rb')
-    # Получаем бинарные данные нашего файла
-    img = f.read()
-    # Конвертируем данные
-    dat = sqlite3.Binary(img) # у меня работает и без нее
-    f.close()
-except FileNotFoundError as e:
-    print('файл не найден: '+str(e))
+app = Flask(__name__)
 
-with sqlite3.connect("test.db.db") as con:
-    # или так:  con = sqlite3.connect('test.db')
-    cur = con.cursor()
-    cur.execute("""CREATE TABLE IF NOT EXISTS images(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                avatar BLOB)""")
-    #cur.execute("INSERT INTO Images(avatar) VALUES (?)", (dat,)) # добавляем новую строку в базу
-    id = 1
-    cur.execute("UPDATE Images SET avatar = ? WHERE id = ?", (dat, id)) # изменяем аватарку в строке с id
-    con.commit()
+def read_imgfile(path, filename):
+    # Принимает имя файла, читает его в папке path
+    # Возвразает картинку в бинарном виде для записи в БД
 
-    cur.execute("SELECT avatar FROM Images WHERE id = 1") # считываем из базы аватар в строке с id=1
-    s = cur.fetchone() # возвращает картеж
-    img = s[0] # берем 0 элемент картежа
+    try:
+        f = open(os.path.join(path, filename), 'rb')
+        # Получаем бинарные данные нашего файла
+        img = f.read()
+        # Конвертируем данные
+        dat = sqlite3.Binary(img)  # у меня работает и без нее
+        f.close()
+        return dat
+    except FileNotFoundError as e:
+        print('файл не найден: ' + str(e))
+        return False
 
-f = open(os.path.join('static', '2_new.jpg'), 'wb')
-# записываем картинку в файл
-f.write(img)
-f.close()
+
+def save_imgfile(img, path, filename):
+    # Принимает изображение в бинарном виде, полученное из БД в ячейке BLOB, путь и имя файла
+    # Записывает его в папку static с именем filename
+    # Возвращает True или False в зависимости от успеха
+
+    try:
+        p = ''
+        f = open(os.path.join(path, filename), 'wb')
+        # записываем картинку в файл
+        f.write(img)
+        f.close()
+        return True
+    except FileNotFoundError as e:
+        print('файл не найден: ' + str(e))
+        return False
+
+
+def read_db(id):
+    # Принимает значение id строки из которой читается изображение из БД test_db, таблицы images
+    # Возвращает изображение или False, eсли id не найден
+
+    with sqlite3.connect("test.db") as con:
+        # или так:  con = sqlite3.connect('test.db')
+        cur = con.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS images(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    avatar BLOB)""")
+        # считываем из базы аватар в строке с id
+        cur.execute(f"SELECT avatar FROM Images WHERE id = {id}")
+        s = cur.fetchone()  # возвращает картеж
+        img = s[0]  # берем 0 элемент картежа
+    if img:
+        return img
+    else:
+        return False
+
+
+def save_db(img, id='no'):
+    # Принимает изображение
+    # Если нет id, добавляет новую строку в БД test.db таблицы images
+    # Если есть id, обновляет изображение в БД в строке с id
+
+    dat = sqlite3.Binary(img)
+    with sqlite3.connect("test.db") as con:
+        cur = con.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS images(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    avatar BLOB)""")
+        if id == 'no':
+            # добавляем новую строку в базу
+            cur.execute("INSERT INTO Images(avatar) VALUES (?)", (dat,))
+        else:
+            # изменяем аватарку в строке с id
+            cur.execute("UPDATE Images SET avatar = ? WHERE id = ?", (dat, id))
+        con.commit()
+    return
+
+@app.route("/")
+def index():
+    print(url_for('index'))
+    return render_template('index.html')
+
+@app.route("/userava")
+def userava():
+    img = read_db(2)
+    h = make_response(img)
+    #h.headers['Content-Type'] = 'image/png'
+    return h
+
+
+#img = read_imgfile('static\images', '2.jpg')
+#save_db(img, 2)
+#img = read_db(2)
+#save_imgfile(img, 'static', '2_new.jpg')
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000, debug=True)
