@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from flask import Flask, render_template, url_for, make_response
+from flask import Flask, render_template, url_for, make_response, request
 
 app = Flask(__name__)
 
@@ -27,7 +27,6 @@ def save_imgfile(img, path, filename):
     # Возвращает True или False в зависимости от успеха
 
     try:
-        p = ''
         f = open(os.path.join(path, filename), 'wb')
         # записываем картинку в файл
         f.write(img)
@@ -78,9 +77,32 @@ def save_db(img, id='no'):
         con.commit()
     return
 
-@app.route("/")
+@app.route("/", methods=["POST", "GET"])
 def index():
     print(url_for('index'))
+    if request.method == "POST":
+        # получены данные методом POST
+        print('получены данные методом POST')
+        if request.files:
+            # есть переданный файл
+            print('есть переданный файл')
+            f = request.files['file']
+            print(f)
+            print(f.headers) # заголовок который пришел с файлом
+            print(f.name)  # имя аргумента переданного файла 'file'
+            print(f.filename) # имя переданного файла
+            print(f.content_type) # тип файла
+            if f.filename:
+                try:
+                    img = f.read() # читает изображение
+                    ext = f.filename.split('.')[1] # выбирает расширение
+                    f = open(os.path.join('static\images', 'insert_img.'+ext), 'wb')
+                    f.write(img)
+                    f.close()
+                    return render_template('index.html', ext=ext)
+                except FileNotFoundError as e:
+                    print('Ошибка чтения файла'+str(e))
+
     return render_template('index.html')
 
 @app.route("/userava")
