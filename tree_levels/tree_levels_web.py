@@ -135,10 +135,16 @@ def inpage():
     input_txt = 'не загрузилось со страницы'
     if request.method == "POST":
         input_txt = request.form['in_text']
-    output_txt = "опляля\nстрока2\nстрока3"
+        data_input = [s for s in input_txt.split('\r\n')]
 
-    return render_template('index.html', input_text=input_txt, output_text=input_txt)
+    cod(data_input)
+
+    f = open('data_output.txt', 'r')
+    output_txt = f.read()
+    f.close()
+
+    return render_template('index.html', input_text=input_txt, output_text=output_txt)
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=False)

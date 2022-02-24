@@ -1,4 +1,4 @@
-корневой родитель: Peter_I имеет 4 уровней вниз
+корневой родитель: Peter_I имеет 6 уровней вниз
 Alexander_I 4
 Alexei 1
 Anna 1
@@ -8,3 +8,5 @@ Paul_I 3
 Peter_I 0
 Peter_II 2
 Peter_III 2
+Rick 5
+Tima 6
